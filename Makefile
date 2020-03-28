@@ -7,7 +7,7 @@ hmm.obj:	$(SRCS)
 	$(CC) $(CFLAG) -c $(SRCS)
 
 fgs:	$(OBJ)
-	$(CC)  $(CFLAG) -o FragGeneScan util_lib.o hmm_lib.o run_hmm.o  -lm -lpthread
+	$(CC)  $(CFLAG) -o FragGeneScan util_lib.o hmm_lib.o run_hmm.o  -lm
 
 clean:
 	rm -rf *.o FragGeneScan* *~
