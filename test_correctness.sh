@@ -19,11 +19,7 @@
 #   along with FragGeneScan.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-echo --------- Clean and Make ---------
-echo ""
-
-echo "---> Make clean"
-make clean
+echo --------- Make Project ---------
 echo ""
 
 echo "---> Make fgs"
@@ -31,11 +27,7 @@ make fgs
 echo ==================================================
 echo ""
 
-echo --------- Clean Test Directory ---------
-echo ""
-
-echo "---> Remove tests directory"
-rm -r ./tests
+echo --------- Test Directory Creation ---------
 echo ""
 
 echo "---> Create tests directory"
@@ -72,4 +64,20 @@ echo ""
 
 echo "---> Assembly contigs"
 diff ./example/contigs-fgs.out ./tests/contigs-fgs.out
+echo ==================================================
+echo ""
+
+echo --------- Test Directory Suppression ---------
+echo ""
+
+echo "---> Remove tests directory"
+rm -r ./tests
+echo ==================================================
+echo ""
+
+echo --------- Clean Project ---------
+echo ""
+
+echo "---> Make clean"
+make clean
 echo ==================================================
