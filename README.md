@@ -1,19 +1,21 @@
-# Installation
+# FragGeneScan
 
-To install FragGeneScan, please follow the steps below:
+## Installation
 
-### 1. Untar the downloaded file "FragGeneScan.tar.gz". This will automatically generate the directory "FragGeneScan".
+### To install FragGeneScan, please follow the steps below:
 
-### 2. Make sure that you also have a C compiler such as "gcc" and perl interpreter.
+#### 1. Untar the downloaded file "FragGeneScan.tar.gz". This will automatically generate the directory "FragGeneScan".
 
-### 3. Run "makefile" to compile and build excutable "FragGeneScan"
+#### 2. Make sure that you also have a C compiler such as "gcc" and perl interpreter.
+
+#### 3. Run "makefile" to compile and build excutable "FragGeneScan"
 ~~~
 	make clean
 	make fgs
 ~~~
 
-# Running the program
-## 1.  To run FragGeneScan, 
+## Running the program
+### 1.  To run FragGeneScan: 
 
 `./run_FragGeneScan.pl -genome=[seq_file_name] -out=[output_file_name] -complete=[1 or 0] -train=[train_file_name] -thread=[num_thread]`
 
@@ -38,7 +40,7 @@ To install FragGeneScan, please follow the steps below:
 
 - [num_thread]: number of thread used in FragGeneScan. Default 1.
 
-## 2. To test FragGeneScan with a complete genomic sequence,
+### 2. To test FragGeneScan with a complete genomic sequence:
 
 `./run_FragGeneScan.pl -genome=./example/NC_000913.fna -out=./example/NC_000913-fgs  -complete=1  -train=complet`
 
@@ -47,7 +49,7 @@ To install FragGeneScan, please follow the steps below:
 	>(NCBI gene predictions for this genome are available under the same folder example/)
 
 
-## 3. To test FragGeneScan with sequencing reads,
+### 3. To test FragGeneScan with sequencing reads:
 
 `./run_FragGeneScan.pl -genome=./example/NC_000913-454.fna -out=./example/NC_000913-454-fgs  -complete=0  -train=454_10`
 
@@ -55,19 +57,19 @@ To install FragGeneScan, please follow the steps below:
 
 	>For illumina reads, please use illumina_5 or illumina_10 as the train model.
 
-## 4. To test FragGeneScan with assembly contigs,
+### 4. To test FragGeneScan with assembly contigs:
 `./run_FragGeneScan.pl -genome=./example/contigs.fna -out=./example/contigs-fgs  -complete=1  -train=complete`
 
 >Note: -complete=1 & -train=complete are used as the parameters.
 
-## 5. To test FragGeneScan with whole genome, 
+### 5. To test FragGeneScan with whole genome: 
 `./run_FragGeneScan.pl -genome=./example/NC_000913.fna -out=./example/NC_000913-fgs  -complete=1  -train=complete`
 
-# Output
+## Output
 
-## Upon completion, FragGeneScan generates four files. 
+### Upon completion, FragGeneScan generates four files. 
 
-### 1. The first file is "`[output_file_name].out`", which lists the coordinates of putative genes. This file consists of five columns (start position, end position, strand, frame, score).  For example,
+#### 1. The first file is "`[output_file_name].out`", which lists the coordinates of putative genes. This file consists of five columns (start position, end position, strand, frame, score).  For example,
 
 ~~~
 >gi|49175990|ref|NC_000913.2| Escherichia coli str. K-12 substr. MG1655, complete genome
@@ -83,7 +85,7 @@ To install FragGeneScan, please follow the steps below:
 ~~~
 
 
-### 2. The second file is  "`[output_file_name].ffn`", which lists nucleotide sequences corresponding to the putative genes in "`[output_file_name].out`". For example,
+#### 2. The second file is  "`[output_file_name].ffn`", which lists nucleotide sequences corresponding to the putative genes in "`[output_file_name].out`". For example,
 
 ~~~
 >gi|49175990|ref|NC_000913.2| Escherichia coli str. K-12 substr. MG1655, complete genome start=108 e
@@ -99,7 +101,7 @@ TTTTGCCGAACTTTTGACGGGACTCGCCGCCGCCCAGCCGGGGTTCCCGCTGGCGCAATTGAAAACTTTCGTCGATCAGG
 GTCCTGCATGGCATTAGTTTGTTGGGGCAGTGCCCGGATAGCATCAACGCTGCGCTGATTTGCCGTGGCGAGAAAATGTCGATCGCCATTATGGCCGGCG
 ~~~
 
-### 3. The third file is "`[output_file_name].faa`", which lists amino acid sequences corresponding to the putative genes in "`[output_file_name].out`". For example,
+#### 3. The third file is "`[output_file_name].faa`", which lists amino acid sequences corresponding to the putative genes in "`[output_file_name].out`". For example,
 
 ~~~
 >gi|49175990|ref|NC_000913.2| Escherichia coli str. K-12 substr. MG1655, complete genome start=108 e
@@ -124,10 +126,10 @@ AHGRHLAGFIHACYSRQPELAAKLMKDVIAEPYRERLLPGFRQARQAVAEIGAVASGISGSGPTLFALCDKPETAQRVAD
 TAGARVLEN
 ~~~
 
-### 4. The fourth file is "`[output_file_name].gff`" which show the gene prediction results in gff format.
+#### 4. The fourth file is "`[output_file_name].gff`" which show the gene prediction results in gff format.
 
 
-# License
+## License
 Copyright (C) 2010 Mina Rho, Yuzhen Ye and Haixu Tang.
 
 Copyright (C) 2020 Bruno Cabado.
