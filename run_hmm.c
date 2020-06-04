@@ -31,20 +31,6 @@
 
 #define STRINGLEN 4096
 
-typedef struct thread_data
-{
-	FILE *out;
-	FILE *aa;
-	FILE *dna;
-	char *obs_head;
-	char *obs_seq;
-	int wholegenome;
-	int cg;
-	int format;
-	HMM *hmm;
-	TRAIN *train;
-} thread_data;
-
 int main (int argc, char **argv)
 {
   clock_t start = clock();
@@ -52,7 +38,7 @@ int main (int argc, char **argv)
   HMM hmm;
   TRAIN train;
   int wholegenome;
-  int format=0;
+  int format = 0;
   FILE *fp;
   char hmm_file[STRINGLEN] = "";
   char out_header[STRINGLEN] = "";
@@ -67,11 +53,21 @@ int main (int argc, char **argv)
   char p1state_file[STRINGLEN] = "";
   char dstate_file[STRINGLEN] = "";
   char train_dir[STRINGLEN] = "";
-  int count=0;
+  int count = 0;
   int total = 0;
   char mystring[STRINGLEN+4] = "";
   int *obs_seq_len;
+  int *seq_start_pointers;
+  int seq_pointer;
   int bp_count;  /* count the length of each line in input file */
+
+  // Viterbi variables
+  FILE *out;
+	FILE *aa;
+	FILE *dna;
+	char *obs_head;
+	char *obs_seq;
+	int cg;
 
   int threadnum = 1;
 
@@ -106,7 +102,7 @@ int main (int argc, char **argv)
     switch (c){
     case 's':
       strcpy(seq_file, optarg);
-      if (access(seq_file, F_OK)==-1){
+      if (access(seq_file, F_OK) == -1){
         fprintf(stderr, "ERROR: Sequence file [%s] does not exist\n", seq_file);
         print_usage();
         exit(EXIT_FAILURE);
@@ -136,8 +132,7 @@ int main (int argc, char **argv)
       strcpy(train_file, optarg);
       strcpy(hmm_file, train_dir);
       strcat(hmm_file, train_file);
-
-      if (access(hmm_file, F_OK)==-1){
+      if (access(hmm_file, F_OK) == -1){
         fprintf(stderr, "ERROR: The file for model parameters [%s] does not exist\n", hmm_file);
         print_usage();
         exit(EXIT_FAILURE);
@@ -148,159 +143,156 @@ int main (int argc, char **argv)
       break;
     }
   }
-
   
   /* check whether the specified files exist */
-  if (access(mstate_file, F_OK)==-1){
+  if (access(mstate_file, F_OK) == -1){
     fprintf(stderr, "Forward prob. file [%s] does not exist\n", mstate_file);
     exit(1);
   }
-  if (access(rstate_file, F_OK)==-1){
+  if (access(rstate_file, F_OK) == -1){
     fprintf(stderr, "Backward prob. file [%s] does not exist\n", rstate_file);
     exit(1);
   }
-  if (access(nstate_file, F_OK)==-1){
+  if (access(nstate_file, F_OK) == -1){
     fprintf(stderr, "noncoding prob. file [%s] does not exist\n", nstate_file);
     exit(1);
   }
-  if (access(sstate_file, F_OK)==-1){
+  if (access(sstate_file, F_OK) == -1){
     fprintf(stderr, "start prob. file [%s] does not exist\n", sstate_file);
     exit(1);
   }
-  if (access(pstate_file, F_OK)==-1){
+  if (access(pstate_file, F_OK) == -1){
     fprintf(stderr, "stop prob. file [%s] does not exist\n", pstate_file);
     exit(1);
   }
-  if (access(s1state_file, F_OK)==-1){
+  if (access(s1state_file, F_OK) == -1){
     fprintf(stderr, "start1 prob. file [%s] does not exist\n", s1state_file);
     exit(1);
   }
-  if (access(p1state_file, F_OK)==-1){
+  if (access(p1state_file, F_OK) == -1){
     fprintf(stderr, "stop1 prob. file [%s] does not exist\n", p1state_file);
     exit(1);
   }
-  if (access(dstate_file, F_OK)==-1){
+  if (access(dstate_file, F_OK) == -1){
     fprintf(stderr, "pwm dist. file [%s] does not exist\n", dstate_file);
     exit(1);
   }
-  if (access(hmm_file, F_OK)==-1){
+  if (access(hmm_file, F_OK) == -1){
     fprintf(stderr, "hmm file [%s] does not exist\n", hmm_file);
     exit(1);
   }
   
   /* read all initial model */
   hmm.N=NUM_STATE;
-  get_train_from_file(hmm_file, &hmm, mstate_file, rstate_file, nstate_file, sstate_file, pstate_file,s1state_file, p1state_file, dstate_file, &train);
+  get_train_from_file(hmm_file, &hmm, mstate_file, rstate_file, nstate_file, sstate_file, pstate_file, s1state_file, p1state_file, dstate_file, &train);
 
   // Initialize thread data structure
-  threadnum = 1;
-  thread_data data;
-
-  sprintf(mystring, "%s.out", out_header); 
-  data.out = fopen(mystring, "w");
+  sprintf(mystring, "%s.out", out_header);
+  out = fopen(mystring, "w");
   sprintf(mystring, "%s.faa", out_header);
-  data.aa = fopen(mystring, "w");
+  aa = fopen(mystring, "w");
   sprintf(mystring, "%s.ffn", out_header);
-  data.dna = fopen(mystring, "w");
+  dna = fopen(mystring, "w");
 
-  data.hmm = (HMM*)malloc(sizeof(HMM));
-  memcpy(data.hmm, &hmm, sizeof(HMM));
-  data.train = (TRAIN*)malloc(sizeof(TRAIN));
-  memcpy(data.train, &train, sizeof(TRAIN));
-
-  data.wholegenome = wholegenome;
-  data.format = format;
-
-  void *status;
-  fp = fopen (seq_file, "r");
-  while ( fgets (mystring , sizeof mystring , fp) ){
+  fp = fopen(seq_file, "r");
+  while (fgets (mystring, sizeof(mystring), fp)){
     if (mystring[0] == '>'){
       count++;
     }
   }
-  obs_seq_len = (int *)malloc(count * sizeof(int));
-  printf("no. of seqs: %d\n", count);  
+  printf("no. of seqs: %d\n", count);
+  // rewind file to de top
+  rewind(fp);
 
+  // Sequences length
+  obs_seq_len = (int *) malloc(count * sizeof(int));
+  // Sequences start pointers
+  seq_start_pointers = (int *) malloc(count * sizeof(int));
+
+  seq_pointer = 0;
   i = 0;
   count = 0;
-  rewind(fp);
-  while ( fgets (mystring , sizeof mystring , fp) ){
+  while (fgets(mystring, sizeof(mystring), fp)){
     if (mystring[0] == '>'){
-      if (i>0){
+      if (i > 0){
+        // previous sequence element
         obs_seq_len[count] = i;
         count++;
       }
+      seq_start_pointers[count] = seq_pointer;
       i = 0;
     }else{
       bp_count = strlen(mystring);
-      while(mystring[bp_count-1] == 10 || mystring[bp_count-1]==13){
-	      bp_count --;
+      // chr(13) => "\r"
+      // chr(10) => "\n"
+      while(mystring[bp_count - 1] == 10 || mystring[bp_count - 1] == 13){
+        bp_count--;
       }
       i += bp_count;
     }
+    seq_pointer = ftell(fp);
   }
+  // Last element
   obs_seq_len[count] = i;
-
+  // rewind file to de top
   rewind(fp);
+
   total = 0;
   count = 0;
   j = 0;
 
-  while (!(feof(fp)))
-  {
-    memset(mystring, '\0', sizeof mystring);
-    fgets (mystring , sizeof mystring  , fp);
+  while (!(feof(fp))){
+    memset(mystring, '\0', sizeof(mystring));
+    fgets (mystring, sizeof(mystring), fp);
     bp_count = strlen(mystring);
-    while(mystring[bp_count - 1] == 10 || mystring[bp_count - 1]==13){
-      bp_count --;
+    // chr(13) => "\r"
+    // chr(10) => "\n"
+    while(mystring[bp_count - 1] == 10 || mystring[bp_count - 1] == 13){
+      bp_count--;
     }
 
     if (mystring[0] == '>' || feof(fp)){
-      if (feof(fp))
-      {
-        memcpy(data.obs_seq + j, mystring, bp_count);
+      if (feof(fp)){
+        memcpy(obs_seq + j, mystring, bp_count);
         j += bp_count;
       }
-      if ((count > 0 && count % threadnum == 0) || feof(fp))
-      {
+      if ((count > 0) || feof(fp)){
         // Deal with the thread
-        data.cg = get_prob_from_cg(data.hmm, data.train, data.obs_seq); //cg - 26 Ye April 16, 2016
-        if (strlen(data.obs_seq)>70){
-          viterbi(data.hmm, data.train, data.obs_seq, data.out, data.aa, data.dna, data.obs_head, data.wholegenome, data.cg, data.format);
+        cg = get_prob_from_cg(&hmm, &train, obs_seq); // cg - 26 Ye April 16, 2016
+        if (strlen(obs_seq)>70){
+          viterbi(&hmm, &train, obs_seq, out, aa, dna, obs_head, wholegenome, cg, format);
         }
-
-        free(data.obs_head);
-        free(data.obs_seq);
-        data.obs_head = NULL;
-        data.obs_seq = NULL;
+        free(obs_head);
+        free(obs_seq);
+        obs_head = NULL;
+        obs_seq = NULL;
         count = 0;
       }
 
-      if (!(feof(fp)))
-      {
-        data.obs_head = (char *)malloc((bp_count+1) * sizeof(char));
-        memset(data.obs_head, 0, (bp_count+1) * sizeof(char));
-        memcpy(data.obs_head, mystring, bp_count);
+      if (!(feof(fp))){
+        obs_head = (char *) malloc((bp_count + 1) * sizeof(char));
+        memset(obs_head, 0, (bp_count + 1) * sizeof(char));
+        memcpy(obs_head, mystring, bp_count);
 
-        data.obs_seq = (char*)malloc((obs_seq_len[total] + 1) * sizeof(char));
-        memset(data.obs_seq, '\0', (obs_seq_len[total] + 1) * sizeof(char));
+        obs_seq = (char*) malloc((obs_seq_len[total] + 1) * sizeof(char));
+        memset(obs_seq, '\0', (obs_seq_len[total] + 1) * sizeof(char));
         total++;
         count++;
         j = 0;
       }
 
     }else{
-      memcpy(data.obs_seq + j, mystring, bp_count);
+      memcpy(obs_seq + j, mystring, bp_count);
       j += bp_count;
     }
-    if (feof(fp))
-    {
+    if (feof(fp)){
       break;
     }
   }
-  fclose(data.out);
-  fclose(data.aa);
-  fclose(data.dna);
+  
+  fclose(out);
+  fclose(aa);
+  fclose(dna);
 
   clock_t end = clock();
   printf("Clock time used (by %d threads) = %.2f mins\n", threadnum, (end - start) / (60.0 * CLOCKS_PER_SEC));
