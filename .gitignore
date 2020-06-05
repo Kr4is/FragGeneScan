@@ -1,0 +1,5 @@
+#Compilation files
+*.o
+
+#Code editor
+.vscode/
