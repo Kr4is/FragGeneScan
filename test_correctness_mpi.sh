@@ -18,12 +18,17 @@
 #   You should have received a copy of the GNU General Public License
 #   along with FragGeneScan.  If not, see <https://www.gnu.org/licenses/>.
 #
+if [[ $# -eq 0 ]] ; then
+    echo 'Set the number of cores to test'
+    echo 'Example: test_correctess_mpi.sh num_cores'
+    exit 1
+fi
 
 echo --------- Make Project ---------
 echo ""
 
 echo "---> Make fgs"
-make fgs
+make CC=mpicc fgs
 echo ==================================================
 echo ""
 
@@ -40,15 +45,15 @@ echo --------- Executions ---------
 echo ""
 
 echo "---> Complete genome secuence"
-./run_FragGeneScan.pl -genome=./example/NC_000913.fna -out=./tests/NC_000913-fgs  -complete=1  -train=complete
+./run_FragGeneScan_mpi.pl -genome=./example/NC_000913.fna -out=./tests/NC_000913-fgs  -complete=1  -train=complete -thread=$1
 echo ""
 
 echo "---> Sequencing reads"
-./run_FragGeneScan.pl -genome=./example/NC_000913-454.fna -out=./tests/NC_000913-454-fgs  -complete=0  -train=454_10
+./run_FragGeneScan_mpi.pl -genome=./example/NC_000913-454.fna -out=./tests/NC_000913-454-fgs  -complete=0  -train=454_10 -thread=$1
 echo ""
 
 echo "---> Assembly contigs"
-./run_FragGeneScan.pl -genome=./example/contigs.fna -out=./tests/contigs-fgs  -complete=1  -train=complete
+./run_FragGeneScan_mpi.pl -genome=./example/contigs.fna -out=./tests/contigs-fgs  -complete=1  -train=complete -thread=$1
 echo ==================================================
 echo ""
 
