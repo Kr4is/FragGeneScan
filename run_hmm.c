@@ -29,6 +29,8 @@
 #include "hmm.h"
 #include "util_lib.h"
 
+#include "mpi.h"
+
 #define STRINGLEN 4096
 
 int main (int argc, char **argv)
@@ -53,12 +55,15 @@ int main (int argc, char **argv)
   char p1state_file[STRINGLEN] = "";
   char dstate_file[STRINGLEN] = "";
   char train_dir[STRINGLEN] = "";
+  int num_sequences = 0;
   int count = 0;
-  int total = 0;
-  char mystring[STRINGLEN+4] = "";
+  int current_seq = 0;
+  char mystring[STRINGLEN] = "";
+  char filename[STRINGLEN+16] = "";
   int *obs_seq_len;
-  int *seq_start_pointers;
-  int seq_pointer;
+  long int *seq_start_pointers;
+  long int seq_pointer, num_start_seq, num_final_seq;
+  int next_proc;
   int bp_count;  /* count the length of each line in input file */
 
   // Viterbi variables
@@ -69,7 +74,8 @@ int main (int argc, char **argv)
 	char *obs_seq;
 	int cg;
 
-  int threadnum = 1;
+  // MPI variables
+  int myid, num_procs;
 
   strncpy(train_dir, argv[0], strlen(argv[0])-12);
   strcat(train_dir, "train/");
@@ -115,15 +121,6 @@ int main (int argc, char **argv)
         print_usage();
         exit(EXIT_FAILURE);
       }
-      break;
-    case 'p':
-      threadnum = atoi(optarg);
-      if (threadnum < 1){
-        fprintf(stderr, "ERROR: An incorrect value [%d] for the option -p was entered\n", threadnum);
-        print_usage();
-        exit(EXIT_FAILURE);
-      }
-      printf("Using %d threads.\n", threadnum);
       break;
     case 'o':
       strcpy(out_header, optarg);
@@ -186,64 +183,94 @@ int main (int argc, char **argv)
   hmm.N=NUM_STATE;
   get_train_from_file(hmm_file, &hmm, mstate_file, rstate_file, nstate_file, sstate_file, pstate_file, s1state_file, p1state_file, dstate_file, &train);
 
-  // Initialize thread data structure
-  sprintf(mystring, "%s.out", out_header);
-  out = fopen(mystring, "w");
-  sprintf(mystring, "%s.faa", out_header);
-  aa = fopen(mystring, "w");
-  sprintf(mystring, "%s.ffn", out_header);
-  dna = fopen(mystring, "w");
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+  MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
+  // Create output temp files for each process
+  sprintf(filename, "%s.out.%d", out_header, myid);
+  out = fopen(filename, "w");
+  sprintf(filename, "%s.faa.%d", out_header, myid);
+  aa = fopen(filename, "w");
+  sprintf(filename, "%s.ffn.%d", out_header, myid);
+  dna = fopen(filename, "w");
+
+  // Open sequences file
   fp = fopen(seq_file, "r");
-  while (fgets (mystring, sizeof(mystring), fp)){
-    if (mystring[0] == '>'){
-      count++;
-    }
-  }
-  printf("no. of seqs: %d\n", count);
-  // rewind file to de top
-  rewind(fp);
 
-  // Sequences length
-  obs_seq_len = (int *) malloc(count * sizeof(int));
-  // Sequences start pointers
-  seq_start_pointers = (int *) malloc(count * sizeof(int));
-
-  seq_pointer = 0;
-  i = 0;
-  count = 0;
-  while (fgets(mystring, sizeof(mystring), fp)){
-    if (mystring[0] == '>'){
-      if (i > 0){
-        // previous sequence element
-        obs_seq_len[count] = i;
-        count++;
+  if(myid == 0){
+    // Get the number of sequences in sequences file
+    while (fgets(mystring, sizeof(mystring), fp)){
+      if (mystring[0] == '>'){
+        num_sequences++;
       }
-      seq_start_pointers[count] = seq_pointer;
-      i = 0;
-    }else{
-      bp_count = strlen(mystring);
-      // chr(13) => "\r"
-      // chr(10) => "\n"
-      while(mystring[bp_count - 1] == 10 || mystring[bp_count - 1] == 13){
-        bp_count--;
-      }
-      i += bp_count;
     }
-    seq_pointer = ftell(fp);
-  }
-  // Last element
-  obs_seq_len[count] = i;
-  // rewind file to de top
-  rewind(fp);
+    printf("no. of seqs: %d\n", num_sequences);
 
-  total = 0;
+    // Rewind file to de top
+    rewind(fp);
+  }
+  /* Broadcast sequences number from process 0 to all processes */
+  MPI_Bcast(&num_sequences, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  // Sequences lengths
+  obs_seq_len = (int *) malloc(num_sequences * sizeof(int));
+  // Sequences start positions in sequences file
+  seq_start_pointers = (long int *) malloc(num_sequences * sizeof(long int));
+
+  if(myid == 0){
+    seq_pointer = 0;
+    i = 0;
+    count = 0;
+    while (fgets(mystring, sizeof(mystring), fp)){
+      if (mystring[0] == '>'){
+        if (i > 0){
+          // previous sequence element
+          obs_seq_len[count] = i;
+          count++;
+        }
+        seq_start_pointers[count] = seq_pointer;
+        i = 0;
+      }else{
+        bp_count = strlen(mystring);
+        // chr(13) => "\r"
+        // chr(10) => "\n"
+        while(mystring[bp_count - 1] == 10 || mystring[bp_count - 1] == 13){
+          bp_count--;
+        }
+        i += bp_count;
+      }
+      seq_pointer = ftell(fp);
+    }
+    // Last element
+    obs_seq_len[count] = i;
+    // Rewind file to de top
+    rewind(fp);
+  }
+  
+  /* Broadcast sequences lengths from process 0 to all processes */
+  MPI_Bcast(obs_seq_len, num_sequences, MPI_INT, 0, MPI_COMM_WORLD);
+  /* Broadcast sequences start positions in sequences file from process 0 to all processes */
+  MPI_Bcast(seq_start_pointers, num_sequences, MPI_LONG, 0, MPI_COMM_WORLD);
+
+  // Get sequences to do by each process
+  int seqs_per_proc = num_sequences / num_procs;
+  int excess_seqs = num_sequences % num_procs;
+  num_start_seq =  myid < (excess_seqs) ? (seqs_per_proc * myid) + myid : (seqs_per_proc * myid) + excess_seqs;
+  next_proc = myid + 1;
+  num_final_seq = next_proc < (excess_seqs) ? (seqs_per_proc * next_proc) + next_proc : (seqs_per_proc * next_proc) + excess_seqs;
+
+  current_seq = num_start_seq;
   count = 0;
   j = 0;
 
-  while (!(feof(fp))){
+  // Move process to each initial position in file
+  fseek(fp, seq_start_pointers[num_start_seq], SEEK_SET);
+
+  // Calculate process sequences
+  while (!(feof(fp)) && (current_seq <= num_final_seq)){
     memset(mystring, '\0', sizeof(mystring));
-    fgets (mystring, sizeof(mystring), fp);
+    fgets(mystring, sizeof(mystring), fp);
     bp_count = strlen(mystring);
     // chr(13) => "\r"
     // chr(10) => "\n"
@@ -274,9 +301,9 @@ int main (int argc, char **argv)
         memset(obs_head, 0, (bp_count + 1) * sizeof(char));
         memcpy(obs_head, mystring, bp_count);
 
-        obs_seq = (char*) malloc((obs_seq_len[total] + 1) * sizeof(char));
-        memset(obs_seq, '\0', (obs_seq_len[total] + 1) * sizeof(char));
-        total++;
+        obs_seq = (char*) malloc((obs_seq_len[current_seq] + 1) * sizeof(char));
+        memset(obs_seq, '\0', (obs_seq_len[current_seq] + 1) * sizeof(char));
+        current_seq++;
         count++;
         j = 0;
       }
@@ -290,11 +317,69 @@ int main (int argc, char **argv)
     }
   }
   
+  // Close files
   fclose(out);
   fclose(aa);
   fclose(dna);
 
+  // Wait for all processes computation
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  if(myid == 0){
+    // Create final output files
+    FILE *current_file;
+    int current_proc;
+    // out file
+    FILE *final_out;
+    sprintf(filename, "%s.out", out_header);
+    final_out = fopen(filename, "w");
+    for(current_proc = 0; current_proc < num_procs; current_proc++){
+      sprintf(filename, "%s.out.%d", out_header, current_proc);
+      current_file = fopen(filename, "r");
+      while(fgets(mystring, sizeof(mystring), current_file)) {
+        fprintf(final_out, "%s", mystring);
+      }
+      fclose(current_file);
+      // Remove temp file
+      remove(filename);
+    }
+    fclose(final_out);
+    // aa file
+    FILE *final_aa;
+    sprintf(filename, "%s.faa", out_header);
+    final_aa = fopen(filename, "w");
+    for(current_proc = 0; current_proc < num_procs; current_proc++){
+      sprintf(filename, "%s.faa.%d", out_header, current_proc);
+      current_file = fopen(filename, "r");
+      while(fgets(mystring, sizeof(mystring), current_file)) {
+        fprintf(final_aa, "%s", mystring);
+      }
+      fclose(current_file);
+      // Remove temp file
+      remove(filename);
+    }
+    fclose(final_aa);
+    // dna file
+    FILE *final_dna;
+    sprintf(filename, "%s.ffn", out_header);
+    final_dna = fopen(filename, "w");
+    for(current_proc = 0; current_proc < num_procs; current_proc++){
+      sprintf(filename, "%s.ffn.%d", out_header, current_proc);
+      current_file = fopen(filename, "r");
+      while(fgets(mystring, sizeof(mystring), current_file)) {
+        fprintf(final_dna, "%s", mystring);
+      }
+      fclose(current_file);
+      // Remove temp file
+      remove(filename);
+    }
+    fclose(final_dna);
+  }
+
   clock_t end = clock();
-  printf("Clock time used (by %d threads) = %.2f mins\n", threadnum, (end - start) / (60.0 * CLOCKS_PER_SEC));
+  if(myid == 0){
+    printf("Clock time used (by %d processes) = %.2f mins\n", num_procs, (end - start) / (60.0 * CLOCKS_PER_SEC));
+  }
+  MPI_Finalize();
 }
 

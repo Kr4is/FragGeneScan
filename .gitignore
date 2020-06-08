@@ -1,5 +1,8 @@
-#Compilation files
+# Compilation files
 *.o
 
-#Code editor
+# Execution program
+FragGeneScan
+
+# Code editor
 .vscode/
