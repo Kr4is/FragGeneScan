@@ -6,7 +6,7 @@
 
 #### 1. Untar the downloaded file "FragGeneScan.tar.gz". This will automatically generate the directory "FragGeneScan".
 
-#### 2. Make sure that you also have a C compiler such as "gcc" and perl interpreter.
+#### 2. Make sure that you also have a C  and MPI compiler such as "mpicc" and perl interpreter.
 
 #### 3. Run "makefile" to compile and build excutable "FragGeneScan"
 ~~~
@@ -17,7 +17,7 @@
 ## Running the program
 ### 1.  To run FragGeneScan: 
 
-`./run_FragGeneScan.pl -genome=[seq_file_name] -out=[output_file_name] -complete=[1 or 0] -train=[train_file_name] -thread=[num_thread]`
+`./run_FragGeneScan.pl -genome=[seq_file_name] -out=[output_file_name] -complete=[1 or 0] -train=[train_file_name] -processes=[processes]`
 
 - [seq_file_name]: sequence file name including the full path
 - [output_file_name]: output file name including the full path
@@ -38,11 +38,11 @@
 
 	>Note that files containing model parameters already exist in the "train" directory. 
 
-- [num_thread]: number of thread used in FragGeneScan. Default 1.
+- [processes]: number of processes used in FragGeneScan. Default 1.
 
 ### 2. To test FragGeneScan with a complete genomic sequence:
 
-`./run_FragGeneScan.pl -genome=./example/NC_000913.fna -out=./example/NC_000913-fgs  -complete=1  -train=complet`
+`./run_FragGeneScan.pl -genome=./example/NC_000913.fna -out=./example/NC_000913-fgs  -complete=1  -train=complete`
 
 - [NC_000913.fna]: this sequence file has the complete genomic sequence of E.coli
 
