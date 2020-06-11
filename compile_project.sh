@@ -30,6 +30,6 @@ echo --------- Make Project ---------
 echo ""
 
 echo "---> Make fgs"
-make CC=mpicc fgs
+make fgs
 echo ==================================================
 echo ""

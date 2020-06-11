@@ -31,7 +31,7 @@ my $command;
 my $program = $0;
 my $dir = substr($0, 0, length($0)-19);
 my $train_file;
-my $threadnum = 1;
+my $num_procs = 1;
 my $starttime = time();
 my $endtime;
 
@@ -40,7 +40,7 @@ GetOptions(
            'out=s' => \$FGS_result,
            'complete=s' => \$FGS_whole,
            'train=s' => \$FGS_train_file,
-           'thread=s' => \$threadnum,
+           'processes=s' => \$num_procs,
            );
 
 if (length($genome_file)==0){
@@ -76,19 +76,18 @@ if (length($FGS_train_file)==0){
     exit;
 }
 
-if ($threadnum < 1)
+if ($num_procs < 1)
 {
-   print "ERROR: Thread number [$threadnum] error,\n";
+   print "ERROR: processes number [$num_procs] error,\n";
    print_usage();
    exit;
 }
-
-$command = $dir."FragGeneScan";
+$command = "mpirun -n ".$num_procs." ";
+$command .= $dir."FragGeneScan";
 $command .= " -s ".$genome_file;
 $command .= " -o ".$FGS_result;
 $command .= " -w ".$FGS_whole ;
 $command .= " -t ".$FGS_train_file;
-$command .= " -p ".$threadnum;
 print "$command\n";
 system($command); 
 
@@ -104,8 +103,7 @@ $endtime = time();
 getElapsedTime($endtime - $starttime);
 
 sub print_usage{
-
-    print "USAGE: ./run_FragGeneScan.pl -genome=[seq_file_name] -out=[output_file_name] -complete=[1 or 0] -train=[train_file_name] (-thread=[number of thread; default 1])\n";
+    print "USAGE: ./run_FragGeneScan.pl -genome=[seq_file_name] -out=[output_file_name] -complete=[1 or 0] -train=[train_file_name] (-processes=[number of processes; default 1])\n";
     print "       [seq_file_name]:    sequence file name including the full path\n";
     print "       [output_file_name]: output file name including the full path\n";
     print "       [1 or 0]:           1 if the sequence file has complete genomic sequences\n";
@@ -119,7 +117,7 @@ sub print_usage{
     print "                           [454_30] for 454 pyrosequencing reads with about 3% error rate\n";
     print "                           [illumina_5] for Illumina sequencing reads with about 0.5% error rate\n";
     print "                           [illumina_10] for Illumina sequencing reads with about 1% error rate\n";
-    print "       [num_thread]:       number of thread used in FragGeneScan. Default 1.\n";
+    print "       [processes]:       number of processes used in FragGeneScan. Default 1.\n";
 }
 
 sub getElapsedTime

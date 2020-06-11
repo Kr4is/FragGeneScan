@@ -1,5 +1,6 @@
 #
 #   FragGeneScan: predicting genes in short and error-prone reads.
+#	Copyright © 2010 Mina Rho, Yuzhen Ye and Haixu Tang.
 #   Copyright © 2020 Bruno Cabado Lousa.
 #	
 #   This file is part of FragGeneScan.
@@ -18,7 +19,7 @@
 #   along with FragGeneScan.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-CC=	gcc
+CC=	mpicc
 CFLAG= -O3
 SRCS=	util_lib.c hmm_lib.c run_hmm.c
 OBJ=	util_lib.o hmm_lib.o run_hmm.o 
