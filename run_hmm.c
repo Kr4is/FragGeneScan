@@ -60,7 +60,7 @@ int main (int argc, char **argv)
   int current_seq = 0;
   char mystring[STRINGLEN] = "";
   char filename[STRINGLEN+16] = "";
-  int *obs_seq_len;
+  int *obs_seq_len, *start_sequences, *end_sequences;
   long int *seq_start_pointers;
   long int seq_pointer, num_start_seq, num_final_seq;
   int next_proc;
@@ -76,6 +76,10 @@ int main (int argc, char **argv)
 
   // MPI variables
   int myid, num_procs;
+
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+  MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
   strncpy(train_dir, argv[0], strlen(argv[0])-12);
   strcat(train_dir, "train/");
@@ -96,7 +100,6 @@ int main (int argc, char **argv)
   strcpy(dstate_file, train_dir);
   strcat(dstate_file, "pwm");
 
-
   /* read command line argument */
   if (argc <= 8){    
     fprintf(stderr, "ERROR: You missed some parameters for input\n");
@@ -104,7 +107,7 @@ int main (int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
-  while ((c=getopt(argc, argv, "fs:o:w:t:p:")) != -1){
+  while ((c=getopt(argc, argv, "fs:o:w:t:")) != -1){
     switch (c){
     case 's':
       strcpy(seq_file, optarg);
@@ -183,10 +186,6 @@ int main (int argc, char **argv)
   hmm.N=NUM_STATE;
   get_train_from_file(hmm_file, &hmm, mstate_file, rstate_file, nstate_file, sstate_file, pstate_file, s1state_file, p1state_file, dstate_file, &train);
 
-  MPI_Init(&argc, &argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-  MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
-
   // Create output temp files for each process
   sprintf(filename, "%s.out.%d", out_header, myid);
   out = fopen(filename, "w");
@@ -217,6 +216,12 @@ int main (int argc, char **argv)
   obs_seq_len = (int *) malloc(num_sequences * sizeof(int));
   // Sequences start positions in sequences file
   seq_start_pointers = (long int *) malloc(num_sequences * sizeof(long int));
+  // Start sequences for each process
+  start_sequences = (int *) malloc(num_procs * sizeof(int));
+  // End sequences for each process
+  end_sequences = (int *) malloc(num_procs * sizeof(int));
+
+  long int total_seqs_len = 0;
 
   if(myid == 0){
     seq_pointer = 0;
@@ -227,6 +232,7 @@ int main (int argc, char **argv)
         if (i > 0){
           // previous sequence element
           obs_seq_len[count] = i;
+          total_seqs_len += i;
           count++;
         }
         seq_start_pointers[count] = seq_pointer;
@@ -244,21 +250,40 @@ int main (int argc, char **argv)
     }
     // Last element
     obs_seq_len[count] = i;
+    total_seqs_len += i;
     // Rewind file to de top
     rewind(fp);
+    
+    int seqs_len_per_proc = total_seqs_len / num_procs;
+    int curr_proc = 0;
+    long int length_accum = 0;
+
+    for(current_seq = 0; current_seq < num_sequences; current_seq++){
+      if(length_accum >= seqs_len_per_proc * curr_proc){
+        if(curr_proc == 0){
+          end_sequences[num_procs - 1] = num_sequences;
+        }else{
+          end_sequences[curr_proc - 1] = current_seq;
+        }
+        start_sequences[curr_proc] = current_seq;
+        curr_proc++;
+      }
+      length_accum += obs_seq_len[current_seq];
+    }
   }
   
   /* Broadcast sequences lengths from process 0 to all processes */
   MPI_Bcast(obs_seq_len, num_sequences, MPI_INT, 0, MPI_COMM_WORLD);
   /* Broadcast sequences start positions in sequences file from process 0 to all processes */
   MPI_Bcast(seq_start_pointers, num_sequences, MPI_LONG, 0, MPI_COMM_WORLD);
+  /* Broadcast start sequences from process 0 to all processes */
+  MPI_Bcast(start_sequences, num_procs, MPI_INT, 0, MPI_COMM_WORLD);
+  /* Broadcast end sequences from process 0 to all processes */
+  MPI_Bcast(end_sequences, num_procs, MPI_INT, 0, MPI_COMM_WORLD);
 
   // Get sequences to do by each process
-  int seqs_per_proc = num_sequences / num_procs;
-  int excess_seqs = num_sequences % num_procs;
-  num_start_seq =  myid < (excess_seqs) ? (seqs_per_proc * myid) + myid : (seqs_per_proc * myid) + excess_seqs;
-  next_proc = myid + 1;
-  num_final_seq = next_proc < (excess_seqs) ? (seqs_per_proc * next_proc) + next_proc : (seqs_per_proc * next_proc) + excess_seqs;
+  num_start_seq = start_sequences[myid];
+  num_final_seq = end_sequences[myid];
 
   current_seq = num_start_seq;
   count = 0;

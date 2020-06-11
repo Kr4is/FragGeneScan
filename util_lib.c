@@ -383,7 +383,7 @@ void get_protein(char *dna, char *protein,  int strand, int whole_genome){
 
 void print_usage(){
 
-  printf("%s", "USAGE: ./FragGeneScan -s [seq_file_name] -o [output_file_name] -w [1 or 0] -t [train_file_name] (-p [thread_num])\n\n");
+  printf("%s", "USAGE: ./FragGeneScan -s [seq_file_name] -o [output_file_name] -w [1 or 0] -t [train_file_name]\n\n");
   printf("%s", "       Mandatory parameters\n");
   printf("%s", "       [seq_file_name]:    sequence file name including the full path\n");
   printf("%s", "       [output_file_name]: output file name including the full path\n");
@@ -398,7 +398,5 @@ void print_usage(){
   printf("%s", "                           [454_10] for 454 pyrosequencing reads with about 1% error rate\n");
   printf("%s", "                           [454_30] for 454 pyrosequencing reads with about 3% error rate\n");
   printf("%s", "                           [illumina_5] for Illumina sequencing reads with about 0.5% error rate\n");
-  printf("%s", "                           [illumina_10] for Illumina sequencing reads with about 1% error rate\n\n");
-  printf("%s", "       Optional parameter\n");
-  printf("%s", "       [thread_num]:       the number of threads used by FragGeneScan; default is 1 thread.\n");
+  printf("%s", "                           [illumina_10] for Illumina sequencing reads with about 1% error rate\n");
 }
