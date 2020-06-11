@@ -19,8 +19,8 @@
 #   along with FragGeneScan.  If not, see <https://www.gnu.org/licenses/>.
 #
 if [[ $# -eq 0 ]] ; then
-    echo 'Set the number of cores to test'
-    echo 'Example: test_correctess_mpi.sh num_cores'
+    echo 'Set the number of processes to test'
+    echo 'Example: test_correctess_mpi.sh num_processes'
     exit 1
 fi
 
