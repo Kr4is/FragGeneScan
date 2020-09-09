@@ -1,21 +1,21 @@
-# FragGeneScan
+# FragGeneScan_HPC
 
 ## Installation
 
-### To install FragGeneScan, please follow the steps below:
+### To install FragGeneScan_HPC, please follow the steps below:
 
-#### 1. Untar the downloaded file "FragGeneScan.tar.gz". This will automatically generate the directory "FragGeneScan".
+#### 1. Untar the downloaded file "FragGeneScan_HPC.tar.gz". This will automatically generate the directory "FragGeneScan_HPC".
 
 #### 2. Make sure that you also have a C  and MPI compiler such as "mpicc" and perl interpreter.
 
-#### 3. Run "makefile" to compile and build excutable "FragGeneScan"
+#### 3. Run "makefile" to compile and build excutable "FragGeneScan_HPC"
 ~~~
 	make clean
 	make fgs
 ~~~
 
 ## Running the program
-### 1.  To run FragGeneScan: 
+### 1.  To run FragGeneScan_HPC: 
 
 `./run_FragGeneScan.pl -genome=[seq_file_name] -out=[output_file_name] -complete=[1 or 0] -train=[train_file_name] -processes=[processes]`
 
@@ -40,7 +40,7 @@
 
 - [processes]: number of processes used in FragGeneScan. Default 1.
 
-### 2. To test FragGeneScan with a complete genomic sequence:
+### 2. To test FragGeneScan_HPC with a complete genomic sequence:
 
 `./run_FragGeneScan.pl -genome=./example/NC_000913.fna -out=./example/NC_000913-fgs  -complete=1  -train=complete`
 
@@ -49,7 +49,7 @@
 	>(NCBI gene predictions for this genome are available under the same folder example/)
 
 
-### 3. To test FragGeneScan with sequencing reads:
+### 3. To test FragGeneScan_HPC with sequencing reads:
 
 `./run_FragGeneScan.pl -genome=./example/NC_000913-454.fna -out=./example/NC_000913-454-fgs  -complete=0  -train=454_10`
 
@@ -57,17 +57,17 @@
 
 	>For illumina reads, please use illumina_5 or illumina_10 as the train model.
 
-### 4. To test FragGeneScan with assembly contigs:
+### 4. To test FragGeneScan_HPC with assembly contigs:
 `./run_FragGeneScan.pl -genome=./example/contigs.fna -out=./example/contigs-fgs  -complete=1  -train=complete`
 
 >Note: -complete=1 & -train=complete are used as the parameters.
 
-### 5. To test FragGeneScan with whole genome: 
+### 5. To test FragGeneScan_HPC with whole genome: 
 `./run_FragGeneScan.pl -genome=./example/NC_000913.fna -out=./example/NC_000913-fgs  -complete=1  -train=complete`
 
 ## Output
 
-### Upon completion, FragGeneScan generates four files. 
+### Upon completion, FragGeneScan_HPC generates four files. 
 
 #### 1. The first file is "`[output_file_name].out`", which lists the coordinates of putative genes. This file consists of five columns (start position, end position, strand, frame, score).  For example,
 
@@ -134,4 +134,4 @@ Copyright (C) 2010 Mina Rho, Yuzhen Ye and Haixu Tang.
 
 Copyright (C) 2020 Bruno Cabado.
 
-The source for FragGeneScan is released under the GNU General Public License as published by the Free Software Foundation, either version 3 of the License (See [COPYING.txt](https://github.com/Kr4is/FragGeneScan/blob/master/COPYING.txt)).
+The source for FragGeneScan_HPC is released under the GNU General Public License as published by the Free Software Foundation, either version 3 of the License (See [COPYING.txt](https://github.com/Kr4is/FragGeneScan/blob/master/COPYING.txt)).
